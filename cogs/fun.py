@@ -19,10 +19,10 @@ class Fun(object):
 
     @commands.command(pass_context=True)
     @commands.has_permissions(administrator=True)
-    async def spam(self, ctx, user: discord.Member, amount: int):
+    async def spam(self, ctx, user: discord.Member, amount: int, *, content):
         messages = 0 
         while messages < amount:
-            await self.bot.say('<@{}> spam.'.format(user.id))
+            await self.bot.say('<@{}> {}'.format(user.id, content))
             messages = messages + 1
             await asyncio.sleep(0.2)
 
