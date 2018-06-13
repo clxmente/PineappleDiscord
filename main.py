@@ -50,8 +50,8 @@ async def on_ready():
     print ("ID: " + bot.user.id)
 
 @bot.command(pass_context=True)
-async def status(ctx, *, message): # Change the status to whatever you want. Try '!status this is a cool bot'
-    if str(ctx.message.author.id) == '393069508027351051':
+async def status(ctx, *, message): #Changing the playing status of bot with a command
+    if str(ctx.message.author.id) == '393069508027351051': #Only the bot owner can use this command
         if message == "servers": # Use the '!status servers' command to set the playing status back to number of servers the bot is on.
             number_of_servers = len(bot.servers)
             await bot.change_presence(game=discord.Game(name='on {} servers'.format(number_of_servers)))
@@ -63,13 +63,6 @@ async def status(ctx, *, message): # Change the status to whatever you want. Try
     else:
         userID = ctx.message.author.id
         await bot.say("<@%s>: Sorry, you aren't my owner." % (userID))
-
-@bot.command(pass_context=True)
-async def padraig(ctx):
-    if str(ctx.message.author.id) == '285305801911042049':
-        await bot.say("What can I say, he's sexy.")
-    else:
-        await bot.say("Only the goat Padraig can use this command.")
 
 
 @bot.command(pass_context=True)
@@ -101,6 +94,12 @@ async def LoadCogs():
         except Exception as e:
             print("Failed to load cog {}".format(extension))
             traceback.print_exc()
+
+@bot.command(pass_context=True)
+@commands.has_permissions(manage_roles=True)
+async def pineapplerole(ctx):
+    author = ctx.message.author
+    await bot.edit_role(author.server, role=discord.utils.get(author.server.roles, name='PineappleBot'), colour=discord.Colour(0xf6d025))
 
 
 @bot.command(pass_context=True)
@@ -393,4 +392,4 @@ async def on_message(message):
             await bot.send_message(message.author, "<@%s>: **What you just said has caught our word filters and has been removed**." % (userID))
 
 # Insert your token here
-bot.run("NDUxOTc4MDc3NzQ1MTg0Nzg1.DfnYhg.yukj7l3TT8a_vqfCOuWTEcOOrSw")
+bot.run(" ")
