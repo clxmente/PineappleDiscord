@@ -29,17 +29,11 @@ bot = commands.Bot(command_prefix="!")
 bot.remove_command("help")
 client = discord.Client()
 
-# Set the channel you're logging to. Do "\#your-channel-name-here" to get the ID for your channel and put it here.
-"""a = open('loggingchannel.txt', 'r')
-channel = a.read()
-a.close()
+with open('db/admin.json') as admn:
+    admin = json.load(admn)
 
-log_channel = ('{}'.format(channel))"""
-
-#log_channel = discord.utils.get(bot.get_all_channels(), name = 'public-mod-logs')
-
-
-
+with open('db/privlogs.json') as admn:
+    privlogs = json.load(admn)
 
 @bot.event
 async def on_ready():
@@ -85,6 +79,67 @@ async def reload(ctx):
             print("Unauthorized user has attempted to reload modules.. Stopped :)")
             await bot.say("⛔️ | Bot owner only!")
 
+@bot.event
+async def on_command(cmd, ctx): # Log commands used in a private logging channel.
+    server = ctx.message.server
+    userID = ctx.message.author.id
+    if (server.id in privlogs["servers"]):
+        log_channel = server.get_channel(privlogs["servers"][server.id])
+    embed = discord.Embed(title='Command Used', color = 0xf6d025)
+    embed.add_field(name='Content', value = ctx.message.content, inline=False)
+    embed.add_field(name='Channel', value = f"#{ctx.message.channel}", inline=False)
+    embed.add_field(name='User', value="{} ".format(ctx.message.author) + "(<@{}>)".format(userID), inline=False)
+    embed.timestamp = datetime.utcnow()
+    embed.set_thumbnail(url=ctx.message.author.avatar_url)
+
+    await bot.send_message(log_channel, embed=embed)
+
+@bot.event
+async def on_message_edit(before, after):
+    await bot.process_commands(after) # Allows commands to be executed if it comes after an edit. For example, if you type a message 'hi' and edit it to say '!ping', the command will execute.
+
+    server = before.author.server
+    userID = before.author.id
+
+    if (server.id in privlogs["servers"]):
+        log_channel = server.get_channel(privlogs["servers"][server.id]) # Oh yea, we're logging it too :)
+    
+    embed = discord.Embed(title='Message Edited', color = 0xD24D26)
+    embed.add_field(name='User', value = '{}'.format(before.author) + "(<@{}>)".format(userID), inline=False)
+    embed.add_field(name='Channel', value = f"#{before.channel}", inline=False)
+    embed.add_field(name='Content Before', value = before.content, inline=True)
+    embed.add_field(name='Content After', value = after.content, inline=True)
+    embed.timestamp = datetime.utcnow()
+    embed.set_thumbnail(url=before.author.avatar_url)
+    
+    await bot.send_message(log_channel, embed=embed)
+
+@bot.event
+async def on_message_delete(message):
+    await bot.process_commands(message)
+    
+    server = message.author.server
+    userID = message.author.id
+    
+    if (server.id in privlogs["servers"]):
+        log_channel = server.get_channel(privlogs["servers"][server.id])
+
+    embed = discord.Embed(title='Message Deleted', color = 0x1E3F8C)
+    embed.add_field(name='User', value=f"{message.author}" + "(<@{}>)".format(userID), inline=False)
+    embed.add_field(name='Channel', value =f"#{message.channel}",inline=False)
+    embed.add_field(name='Content', value=message.content, inline=False)
+    embed.timestamp = datetime.utcnow()
+    embed.set_thumbnail(url=message.author.avatar_url)
+    
+    await bot.send_message(log_channel, embed=embed)
+
+
+
+def updateDatabase(db, name):
+    with open(f"db/{name}.json", 'w') as dbfile:
+        json.dump(db, dbfile, indent=4)
+
+
 async def LoadCogs():
     for extension in [f.replace('.py', "") for f in listdir("cogs") if isfile(join("cogs", f))]:
         try:
@@ -95,32 +150,29 @@ async def LoadCogs():
             print("Failed to load cog {}".format(extension))
             traceback.print_exc()
 
-@bot.command(pass_context=True)
-@commands.has_permissions(manage_roles=True)
-async def pineapplerole(ctx):
-    author = ctx.message.author
-    await bot.edit_role(author.server, role=discord.utils.get(author.server.roles, name='PineappleBot'), colour=discord.Colour(0xf6d025))
-
 
 @bot.command(pass_context=True)
 async def help(ctx):
     embed = discord.Embed(title='Help Command', description="**Invite Link:** https://discordapp.com/api/oauth2/authorize?client_id=456247418288209922&permissions=8&scope=bot", color = 0xf6d025)
-    embed.add_field(name="StaffVote", value = "**Description:** Sends an embed to vote for staff position through reacting with an upvote or downvote.\n**Permission Required:** Administrator\n**Arguments:** `member`\n```!staffvote Eric```", inline=False)
-    embed.add_field(name="Channelid", value = "**Description:** Sends the channel id of the current channel.\n**Permission Required:** None\n**Arguments:** None\n```!channelid```", inline=False)
-    embed.add_field(name="Mute/Unmute", value = "**Description:** Mute/Unmute a user.\n**Permission Required:** Manage Roles\n**Arguments:** `user` `reason`\n```[!mute | !unmute] @user this is a reason```", inline=False)
-    embed.add_field(name="Info", value = "**Description:** Gives you info on a user.\n**Permission Required:** @Moderators\n**Arguments:** `user`\n```!info @user```", inline=False)
-    embed.add_field(name="ServerInfo", value = "**Description:** Gives you info on the current server.\n**Permission Required:** Administrator\n**Arguments:** None\n```!serverinfo```", inline=False)
-    embed.add_field(name="Kick", value = "**Description:** Kicks a user from the server.\n**Permission Required:** Kick Members\n**Arguments:** `user`\n```!kick @user```", inline=False)
-    embed.add_field(name="Ban", value = "**Description:** Bans a user.\n**Permission Required:** Ban Members\n**Arguments:** `user`\n```!ban @user```", inline=False)
-    embed.add_field(name="Clear", value = "**Description:** Clears messages from a channel. Can only delete messages in the range of [2, 100]\n**Permission Required:** Administrator\n**Arguments:** `integer`\n```!clear 50```", inline=False)
-    embed.add_field(name="Create Role", value = "**Description:** Creates a new role and assigns a random color to it.\n**Permission Required:** Manage Roles\n**Arguments:** Role Name\n```!cr [role name]```", inline=False)
-    embed.add_field(name="Edit Role", value = "**Description:** Takes an existing role and assigns a random color to it.\n**Permission Required:** Manage Roles\n**Arguments:** Role Name\n```!er [role name]```", inline=False)
-    embed.add_field(name="Spam", value = "**Description:** Spams a user with a message of your choice.\n**Permission Required:** Ban Members\n**Arguments:** Role Name\n```!spam @user [int][message]```", inline=False)
-    embed.add_field(name="hmmcount", value = "**Description:** Shows a count of how many times Pineapple has replied with a thonk.\n**Permission Required** None\n**Arguments:** None\n```hmmcount```", inline=False)
-    embed.add_field(name="Duck", value = "**Description:** Loads a random picture of a duck\n**Permission Required** None\n**Arguments:** None\n```!duck```", inline=False)
-    embed.add_field(name="Dog", value = "**Description:** Loads a random picture of a dog\n**Permission Required** None\n**Arguments:** None\n```!dog```", inline=False)
-    embed.add_field(name="Shib", value = "**Description:** Loads a random picture of a shiba\n**Permission Required** None\n**Arguments:** None\n```!shib```", inline=False)
-    embed.add_field(name="Dab", value = "**Description:** Dab\n**Permission Required** None\n**Arguments:** None\n```!dab```", inline=False)
+    
+    embed.add_field(name="privatelogging", value = "**Description:** Sets the channel for private logging for message edits, command uses, and deleted messages.\n**Permission Required:** Administrator\n**Arguments:** `None`\n```!privatelogging```", inline=False)
+    embed.add_field(name="enablelogging", value = "**Description:** Sets the channel for mod logging.\n**Permission Required:** Administrator\n**Arguments:** `None`\n```!enablelogging```", inline=False)
+    embed.add_field(name="staffvote", value = "**Description:** Sends an embed to vote for staff position through reacting with an upvote or downvote.\n**Permission Required:** Administrator\n**Arguments:** `member`\n```!staffvote Eric```", inline=False)
+    embed.add_field(name="channelid", value = "**Description:** Sends the channel id of the current channel.\n**Permission Required:** None\n**Arguments:** `None`\n```!channelid```", inline=False)
+    embed.add_field(name="mute/unmute", value = "**Description:** Mute/Unmute a user.\n**Permission Required:** Manage Roles\n**Arguments:** `user` `reason`\n```[!mute | !unmute] @user this is a reason```", inline=False)
+    embed.add_field(name="info", value = "**Description:** Gives you info on a user.\n**Permission Required:** @Moderators\n**Arguments:** `user`\n```!info @user```", inline=False)
+    embed.add_field(name="serverinfo", value = "**Description:** Gives you info on the current server.\n**Permission Required:** Administrator\n**Arguments:** `None`\n```!serverinfo```", inline=False)
+    embed.add_field(name="kick", value = "**Description:** Kicks a user from the server.\n**Permission Required:** Kick Members\n**Arguments:** `user`\n```!kick @user```", inline=False)
+    embed.add_field(name="ban", value = "**Description:** Bans a user.\n**Permission Required:** Ban Members\n**Arguments:** `user`\n```!ban @user```", inline=False)
+    embed.add_field(name="clear", value = "**Description:** Clears messages from a channel. Can only delete messages in the range of [2, 100]\n**Permission Required:** Administrator\n**Arguments:** `integer`\n```!clear 50```", inline=False)
+    embed.add_field(name="Create Role", value = "**Description:** Creates a new role and assigns a random color to it.\n**Permission Required:** Manage Roles\n**Arguments:** `Role Name`\n```!cr [role name]```", inline=False)
+    embed.add_field(name="Edit Role", value = "**Description:** Takes an existing role and assigns a random color to it.\n**Permission Required:** Manage Roles\n**Arguments:** `Role Name`\n```!er [role name]```", inline=False)
+    embed.add_field(name="spam", value = "**Description:** Spams a user with a message of your choice.\n**Permission Required:** Ban Members\n**Arguments:** `Integer`, `Message`\n```!spam @user [int][message]```", inline=False)
+    embed.add_field(name="hmmcount", value = "**Description:** Shows a count of how many times Pineapple has replied with a thonk.\n**Permission Required** None\n**Arguments:** `None`\n```hmmcount```", inline=False)
+    embed.add_field(name="duck", value = "**Description:** Loads a random picture of a duck\n**Permission Required** None\n**Arguments:** `None`\n```!duck```", inline=False)
+    embed.add_field(name="dog", value = "**Description:** Loads a random picture of a dog\n**Permission Required** None\n**Arguments:** `None`\n```!dog```", inline=False)
+    embed.add_field(name="shib", value = "**Description:** Loads a random picture of a shiba\n**Permission Required** None\n**Arguments:** `None`\n```!shib```", inline=False)
+    embed.add_field(name="dab", value = "**Description:** Dab\n**Permission Required** None\n**Arguments:** `None`\n```!dab```", inline=False)
     embed.add_field(name="Created By", value="\n**clemente#7106**\nWith help from\n**exofeel#3333**\nTry `!trackrr` !\n:)", inline=False)
 
     await bot.say("Check your DMs!")
@@ -187,18 +239,6 @@ async def trackrr(ctx):
 
     await bot.say(embed=embed)
 
-
-# ---------------------------------------------------------------LOGGING CHANNEL----------------------------------------------------------------------
-"""@bot.command(pass_context=True)
-async def enablelogging(ctx):
-    f = open('loggingchannel.txt', 'r')
-    loggingChannel = f.read()
-    f.close()
-    loggingChannel = ctx.message.channel.id
-    f = open('loggingchannel.txt', 'w')
-    f.write(loggingChannel)
-    f.close()
-"""
 
 # Add Command
 @bot.command()
@@ -320,7 +360,7 @@ async def on_message(message):
 	    await bot.send_message(message.channel, "**{}** a-z's".format(count))
 
     if message.content.lower().startswith('!inv'):
-        await bot.send_message(message.channel, '**INVITE PINEAPPLEBOT TO YOUR OWN SERVER:** \nhttps://discordapp.com/oauth2/authorize?client_id=451978077745184785&scope=bot')
+        await bot.send_message(message.channel, '**INVITE PINEAPPLEBOT TO YOUR OWN SERVER:** \nhttps://discordapp.com/oauth2/authorize?client_id=456247418288209922&scope=bot')
 
     if message.content.lower().startswith('!duck'):
 	    msg = await bot.send_message(message.channel, 'loading...')
