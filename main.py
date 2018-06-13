@@ -9,6 +9,7 @@ import json
 import string
 import time
 import os
+import os.path
 import traceback
 
 from discord.ext import commands
@@ -34,6 +35,10 @@ with open('db/admin.json') as admn:
 
 with open('db/privlogs.json') as admn:
     privlogs = json.load(admn)
+
+with open('db/users.json') as fp:
+    users = json.load(fp)
+
 
 @bot.event
 async def on_ready():
@@ -96,7 +101,6 @@ async def on_command(cmd, ctx): # Log commands used in a private logging channel
 
 @bot.event
 async def on_message_edit(before, after):
-    await bot.process_commands(after) # Allows commands to be executed if it comes after an edit. For example, if you type a message 'hi' and edit it to say '!ping', the command will execute.
 
     server = before.author.server
     userID = before.author.id
@@ -116,7 +120,6 @@ async def on_message_edit(before, after):
 
 @bot.event
 async def on_message_delete(message):
-    await bot.process_commands(message)
     
     server = message.author.server
     userID = message.author.id
