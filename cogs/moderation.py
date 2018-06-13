@@ -1,14 +1,27 @@
 import discord
 import datetime
 import asyncio
+import json
 
 from discord.ext import commands
 from random import randint
 from datetime import datetime
 
+with open('db/admin.json') as admn:
+    admin = json.load(admn)
+
+with open('db/privlogs.json') as admn:
+    privlogs = json.load(admn)
+
+
+def updateDatabase(db, name):
+        with open(f"db/{name}.json", 'w') as dbfile:
+            json.dump(db, dbfile, indent=4)
+
 class Moderation(object):
     def __init__(self, bot):
         self.bot = bot
+
 
     @commands.command(pass_context=True)
     @commands.has_permissions(manage_roles=True)
@@ -89,8 +102,12 @@ class Moderation(object):
     @commands.command(pass_context=True)
     @commands.has_permissions(manage_roles=True)
     async def timeout(self, ctx, user: discord.Member, *, reason: str = "No reason specified"):
+        server = ctx.message.server
+        if (server.id in admin["servers"]):
+            log_channel = server.get_channel(admin["servers"][server.id]) # Get the channel from the database
+            print(log_channel)
         
-        log_channel = discord.utils.get(ctx.message.server.channels, name = 'public-mod-logs')
+        #log_channel = discord.utils.get(ctx.message.server.channels, name = 'public-mod-logs')
         # Specify  what role your adding. In this case its the muted role since we're muting/unmuting the user
         role = discord.utils.get(user.server.roles, name = "Timeout")
         # Send it to the logs
@@ -135,8 +152,10 @@ class Moderation(object):
     @commands.command(pass_context=True)
     @commands.has_permissions(manage_roles=True)
     async def untimeout(self, ctx, user: discord.Member, *, reason: str = "No reason specified"):
-
-        log_channel = discord.utils.get(ctx.message.server.channels, name = 'public-mod-logs')
+        server = ctx.message.server
+        if (server.id in admin["servers"]):
+            log_channel = server.get_channel(admin["servers"][server.id])
+        #log_channel = discord.utils.get(ctx.message.server.channels, name = 'public-mod-logs')
         # Specify  what role your adding. In this case its the muted role since we're muting/unmuting the user
         role = discord.utils.get(user.server.roles, name = "Timeout")
         # Send it to the logs
@@ -175,8 +194,10 @@ class Moderation(object):
     @commands.command(pass_context=True)
     @commands.has_permissions(manage_roles=True)
     async def mute(self, ctx, user: discord.Member, *, reason: str = "No reason specified"):
-        
-        log_channel = discord.utils.get(ctx.message.server.channels, name = 'public-mod-logs')
+        server = ctx.message.server
+        if (server.id in admin["servers"]):
+            log_channel = server.get_channel(admin["servers"][server.id])        
+        #log_channel = discord.utils.get(ctx.message.server.channels, name = 'public-mod-logs')
         # Specify  what role your adding. In this case its the muted role since we're muting/unmuting the user
         role = discord.utils.get(user.server.roles, name = "Muted")
         # Send it to the logs
@@ -226,7 +247,9 @@ class Moderation(object):
     @commands.command(pass_context=True)
     @commands.has_permissions(manage_roles=True)
     async def unmute(self, ctx, user: discord.Member, *, reason: str = "No reason specified"):
-
+        server = ctx.message.server
+        if (server.id in admin["servers"]):
+            log_channel = server.get_channel(admin["servers"][server.id])
         log_channel = discord.utils.get(ctx.message.server.channels, name = 'public-mod-logs')
         # Specify  what role your adding. In this case its the muted role since we're muting/unmuting the user
         role = discord.utils.get(user.server.roles, name = "Muted")
@@ -334,8 +357,10 @@ class Moderation(object):
     @commands.command(pass_context=True)
     @commands.has_permissions(kick_members=True) 
     async def kick(self, ctx, user: discord.Member, *, reason: str = "No reason specified"):
-
-        log_channel = discord.utils.get(ctx.message.server.channels, name = 'public-mod-logs')
+        server = ctx.message.server
+        if (server.id in admin["servers"]):
+            log_channel = server.get_channel(admin["servers"][server.id])
+        #log_channel = discord.utils.get(ctx.message.server.channels, name = 'public-mod-logs')
         userID = (user.id)
         embed = discord.Embed(title="Member Kicked", color = 0x3C80E2)
         embed.add_field(name="Member", value="{} ".format(user) + "(<@{}>)".format(userID), inline=True)
@@ -371,8 +396,10 @@ class Moderation(object):
     @commands.command(pass_context=True)
     @commands.has_permissions(ban_members=True) 
     async def ban(self, ctx, user: discord.Member, *, reason: str = "No reason specified"):
-
-        log_channel = discord.utils.get(ctx.message.server.channels, name = 'public-mod-logs')
+        server = ctx.message.server
+        if (server.id in admin["servers"]):
+            log_channel = server.get_channel(admin["servers"][server.id])
+        #log_channel = discord.utils.get(ctx.message.server.channels, name = 'public-mod-logs')
         userID = (user.id) 
         embed = discord.Embed(title="Member Banned", color = 0xD82626)
         embed.add_field(name="Member", value="{} ".format(user) + "(<@{}>)".format(userID), inline=True)
@@ -412,6 +439,22 @@ class Moderation(object):
                 await self.bot.delete_message(botMessage)
             except:
                 pass
+
+    @commands.command(pass_context=True)
+    @commands.has_permissions(administrator=True)
+    async def enablelogging(self, ctx):
+        await self.bot.say('\u2705: This channel is now used for public mod logs!')
+        admin["servers"][ctx.message.server.id] = ctx.message.channel.id
+        updateDatabase(admin, "admin")
+
+    @commands.command(pass_context=True)
+    @commands.has_permissions(administrator=True)
+    async def privatelogging(self, ctx):
+        await self.bot.say('\u2705: This channel is now used for private mod logs!')
+        privlogs["servers"][ctx.message.server.id] = ctx.message.channel.id
+        updateDatabase(privlogs, "privlogs")
+        
+            
 
 def setup(bot):
     bot.add_cog(Moderation(bot))
