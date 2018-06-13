@@ -64,7 +64,7 @@ def getLevel(userID: int):
         try:
             with open('db/users.json', 'r') as fp:
                 users = json.load(fp)
-            return users[userID]['level']
+            return users[userID]['Level']
         except KeyError:
             return 0
 
@@ -77,12 +77,13 @@ class XpSystem(object):
     async def on_message(self, message):
         if str(message.author.id) == '456247418288209922':
             return
-        randomXP = randint(5, 25)
+
+        randomXP = randint(5, 15)
         userAddXP(message.author.id, randomXP)
 
     @commands.command(pass_context=True)
     async def xpstats(self, ctx):
-        embed = discord.Embed(title="Leveling Stats - {}".format(ctx.message.author), description='Currently Level //Working on this', color = 0x25C740)
+        embed = discord.Embed(title="Leveling Stats - {}".format(ctx.message.author), description='Currently Level {}'.format(getLevel(ctx.message.author.id)), color = 0x25C740)
         embed.set_thumbnail(url=ctx.message.author.avatar_url)
         embed.add_field(name="Experience Points", value="XXXX/XXXX ({})".format(getXP(ctx.message.author.id)), inline=True)
         embed.add_field(name="Rank", value = "XX/XXXX", inline = True)

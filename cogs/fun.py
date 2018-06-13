@@ -1,10 +1,14 @@
 import discord
 import datetime
 import asyncio
+import json
 
 from discord.ext import commands
 from random import randint
 from datetime import datetime
+
+with open('db/admin.json') as admn:
+    admin = json.load(admn)
 
 class Fun(object):
     def __init__(self, bot):
