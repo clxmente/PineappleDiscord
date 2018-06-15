@@ -24,6 +24,16 @@ class Fun(object):
     @commands.command(pass_context=True)
     @commands.has_permissions(ban_members=True)
     async def spam(self, ctx, user: discord.Member, amount: int, *, content):
+        if amount > 20:
+            await self.bot.say("Can't spam over 20.")
+            return
+        elif '@everyone' in content:
+            await self.bot.say("Nice try.")
+            return
+        elif '@here' in content:
+            await self.bot.say("Nice try.")
+            return
+            
         messages = 0 
         while messages < amount:
             await self.bot.say('<@{}> {}'.format(user.id, content))
@@ -43,9 +53,24 @@ class Fun(object):
         elif isinstance(error, discord.ext.commands.MissingRequiredArgument):
             await self.bot.say('Missing Required Argument. ```!spam @user 10 wake up```')
             await self.bot.delete_message(ctx.message)
+        
+    @commands.command(pass_context=True)
+    async def say(self, ctx, *, message):
+        if '@everyone' in message: # Checking to make sure the user isn't trying to ping everyone or here
+            await self.bot.say('Nice try.')
+            await self.bot.delete_message(ctx.message)
+            return
+        elif '@here' in message:
+            await self.bot.say('Nice try.')
+            await self.bot.delete_message(ctx.message)
+            return
+        else:
+            await self.bot.send_message(ctx.message.channel, message)
+            await self.bot.delete_message(ctx.message)
 
-
-
+    @commands.command(pass_context=True)
+    async def reverse(self, ctx, *, message):
+        await self.bot.say("{}".format(message)[::-1])
 
 def setup(bot):
     bot.add_cog(Fun(bot))

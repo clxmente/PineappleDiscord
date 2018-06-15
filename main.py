@@ -92,7 +92,7 @@ async def on_command(cmd, ctx): # Log commands used in a private logging channel
         log_channel = server.get_channel(privlogs["servers"][server.id])
     embed = discord.Embed(title='Command Used', color = 0xf6d025)
     embed.add_field(name='Content', value = ctx.message.content, inline=False)
-    embed.add_field(name='Channel', value = f"#{ctx.message.channel}", inline=False)
+    embed.add_field(name='Channel', value = "#{}".format(ctx.message.channel), inline=False)
     embed.add_field(name='User', value="{} ".format(ctx.message.author) + "(<@{}>)".format(userID), inline=False)
     embed.timestamp = datetime.utcnow()
     embed.set_thumbnail(url=ctx.message.author.avatar_url)
@@ -109,8 +109,8 @@ async def on_message_edit(before, after):
         log_channel = server.get_channel(privlogs["servers"][server.id]) # Oh yea, we're logging it too :)
     
     embed = discord.Embed(title='Message Edited', color = 0xD24D26)
-    embed.add_field(name='User', value = '{}'.format(before.author) + "(<@{}>)".format(userID), inline=False)
-    embed.add_field(name='Channel', value = f"#{before.channel}", inline=False)
+    embed.add_field(name='User', value = '{} '.format(before.author) + "(<@{}>)".format(userID), inline=False)
+    embed.add_field(name='Channel', value = "#{}".format(before.channel), inline=False)
     embed.add_field(name='Content Before', value = before.content, inline=True)
     embed.add_field(name='Content After', value = after.content, inline=True)
     embed.timestamp = datetime.utcnow()
@@ -128,18 +128,68 @@ async def on_message_delete(message):
         log_channel = server.get_channel(privlogs["servers"][server.id])
 
     embed = discord.Embed(title='Message Deleted', color = 0x1E3F8C)
-    embed.add_field(name='User', value=f"{message.author}" + "(<@{}>)".format(userID), inline=False)
-    embed.add_field(name='Channel', value =f"#{message.channel}",inline=False)
+    embed.add_field(name='User', value="{} ".format(message.author) + "(<@{}>)".format(userID), inline=False)
+    embed.add_field(name='Channel', value =message.channel,inline=False)
     embed.add_field(name='Content', value=message.content, inline=False)
     embed.timestamp = datetime.utcnow()
     embed.set_thumbnail(url=message.author.avatar_url)
     
     await bot.send_message(log_channel, embed=embed)
 
+@bot.event
+async def on_member_join(member):
+    server = member.server
+    userID = member.id
+    
+    if (server.id in privlogs["servers"]):
+        log_channel = server.get_channel(privlogs["servers"][server.id])
+
+    embed = discord.Embed(title='Member Joined', color = 0xFD2F48)
+    embed.add_field(name="Member", value="{} ".format(member) + "(<@{}>)".format(userID),  inline=True)
+
+    embed.add_field(name='User ID', value=userID)
+
+    memMade = member.created_at
+    memMade2 = memMade.strftime("%B %d, %Y %I:%M %p")
+    embed.add_field(name='Created At', value=memMade2)
+
+    memJoin = member.joined_at.strftime("%B %d, %Y %I:%M %p")
+    embed.add_field(name='Joined', value=memJoin, inline=True)
+    
+    embed.timestamp = datetime.utcnow()
+    embed.set_thumbnail(url=member.avatar_url)
+    
+    await bot.send_message(log_channel, embed=embed)
+
+@bot.event
+async def on_member_remove(member):
+    server = member.server
+    userID = member.id
+    
+    if (server.id in privlogs["servers"]):
+        log_channel = server.get_channel(privlogs["servers"][server.id])
+
+    embed = discord.Embed(title='Member Left', color = 0xFD2F48)
+    embed.add_field(name="Member", value="{} ".format(member) + "(<@{}>)".format(userID),  inline=True)
+
+    embed.add_field(name='User ID', value=userID)
+
+    memMade = member.created_at
+    memMade2 = memMade.strftime("%B %d, %Y %I:%M %p")
+    embed.add_field(name='Created At', value=memMade2)
+
+    memJoin = member.joined_at.strftime("%B %d, %Y %I:%M %p")
+    embed.add_field(name='Joined', value=memJoin, inline=True)
+
+    embed.timestamp = datetime.utcnow()
+    embed.set_thumbnail(url=member.avatar_url)
+    
+    await bot.send_message(log_channel, embed=embed)
+
 
 
 def updateDatabase(db, name):
-    with open(f"db/{name}.json", 'w') as dbfile:
+    with open("db/{}.json".format(name), 'w') as dbfile:
         json.dump(db, dbfile, indent=4)
 
 
@@ -160,6 +210,7 @@ async def help(ctx):
     
     embed.add_field(name="privatelogging", value = "**Description:** Sets the channel for private logging for message edits, command uses, and deleted messages.\n**Permission Required:** Administrator\n**Arguments:** `None`\n```!privatelogging```", inline=False)
     embed.add_field(name="enablelogging", value = "**Description:** Sets the channel for mod logging.\n**Permission Required:** Administrator\n**Arguments:** `None`\n```!enablelogging```", inline=False)
+    embed.add_field(name="xpstats", value = "**Description:** Displays your current level and xp.\n**Permission Required:** None\n**Arguments:** `None`\n```!xpstats```", inline=False)
     embed.add_field(name="staffvote", value = "**Description:** Sends an embed to vote for staff position through reacting with an upvote or downvote.\n**Permission Required:** Administrator\n**Arguments:** `member`\n```!staffvote Eric```", inline=False)
     embed.add_field(name="channelid", value = "**Description:** Sends the channel id of the current channel.\n**Permission Required:** None\n**Arguments:** `None`\n```!channelid```", inline=False)
     embed.add_field(name="mute/unmute", value = "**Description:** Mute/Unmute a user.\n**Permission Required:** Manage Roles\n**Arguments:** `user` `reason`\n```[!mute | !unmute] @user this is a reason```", inline=False)
@@ -435,4 +486,4 @@ async def on_message(message):
             await bot.send_message(message.author, "<@%s>: **What you just said has caught our word filters and has been removed**." % (userID))
 
 # Insert your token here
-bot.run(" ") #bruh h i did it again but i caught myself oops. I made a new token already
+bot.run(" ")

@@ -15,7 +15,7 @@ with open('db/privlogs.json') as admn:
 
 
 def updateDatabase(db, name):
-        with open(f"db/{name}.json", 'w') as dbfile:
+        with open("db/{}.json".format(name), 'w') as dbfile:
             json.dump(db, dbfile, indent=4)
 
 class Moderation(object):
