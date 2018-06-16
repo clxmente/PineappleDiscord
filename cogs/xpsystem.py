@@ -21,50 +21,72 @@ with open('db/privlogs.json') as admn:
 with open('db/users.json') as fp:
     users = json.load(fp)
 
-def userAddXP(userID: int, xp: int):
+def user_add_xp(user_id: int, xp: int):
     if os.path.isfile("db/users.json"):
         try:
             with open('db/users.json', 'r') as fp:
                 users = json.load(fp)
-            users[userID]['xp'] += xp
+            users[user_id]['xp'] += xp
             with open('db/users.json', 'w') as fp:
                 json.dump(users, fp, sort_keys=True, indent=4)
         except KeyError:
             with open('db/users.json', 'r') as fp:
                 users = json.load(fp)
-            users[userID] = {}
-            users[userID]['xp'] = xp
+            users[user_id] = {}
+            users[user_id]['xp'] = xp
             with open('db/users.json', 'w') as fp:
                 json.dump(users, fp, sort_keys=True, indent=4)
 
     else:
-        users = {userID: {}}
-        users[userID]['xp'] = xp
+        users = {user_id: {}}
+        users[user_id]['xp'] = xp
         with open('db/users.json', 'w') as fp:
             json.dump(users, fp, sort_keys=True, indent=4)
 
-def getXP(userID: int):
+
+def user_remove_xp(user_id: int, xp: int):
+    if os.path.isfile("db/users.json"):
+        try:
+            with open('db/users.json', 'r') as fp:
+                users = json.load(fp)
+            users[user_id]['xp'] -= xp
+            with open('db/users.json', 'w') as fp:
+                json.dump(users, fp, sort_keys=True, indent=4)
+        except KeyError:
+            with open('db/users.json', 'r') as fp:
+                users = json.load(fp)
+            users[user_id] = {}
+            users[user_id]['xp'] = 0
+            with open('db/users.json', 'w') as fp:
+                json.dump(users, fp, sort_keys=True, indent=4)
+    else:
+        users = {user_id: {}}
+        users[user_id]['xp'] = 0
+        with open('db/users.json', 'w') as fp:
+            json.dump(users, fp, sort_keys=True, indent=4)
+
+def getXP(user_id: int):
     if os.path.isfile('db/users.json'):
         with open('db/users.json', 'r') as fp:
             users = json.load(fp)
-        return users[userID]['xp']
+        return users[user_id]['xp']
     else:
         return 0
 
-def setLevel(userID: int, level: int):
+def setLevel(user_id: int, level: int):
     if os.path.isfile('db/users.json'):
         with open('db/users.json', 'r') as fp:
             users = json.load(fp)
-        users[userID]["Level"] = level
+        users[user_id]["Level"] = level
         with open('db/users.json', 'w') as fp:
             json.dump(users, fp, sort_keys=True, indent=4)
 
-def getLevel(userID: int):
+def getLevel(user_id: int):
     if os.path.isfile('db/users.json'):
         try:
             with open('db/users.json', 'r') as fp:
                 users = json.load(fp)
-            return users[userID]['Level']
+            return users[user_id]['Level']
         except KeyError:
             return 0
 
@@ -78,45 +100,11 @@ class XpSystem(object):
         if str(message.author.id) == '456247418288209922':
             return
 
-        user_id= message.author.id
-        userLevel = getLevel(message.author.id)
-        userXP = getXP(message.author.id)
+        randomXP = randint(7, 25)
+        user_add_xp(message.author.id, randomXP)
 
-        if userLevel == 0 and userXP >= 1000:
-            setLevel(user_id, 1)
-
-        if userLevel == 1 and userXP >= 2000:
-            setLevel(user_id, 2)
-
-        if userLevel == 2 and userXP >= 3000:
-            setLevel(user_id, 3)
-
-        if userLevel == 3 and userXP >= 4000:
-            setLevel(user_id, 4)
-
-        if userLevel == 4 and userXP >= 5000:
-            setLevel(user_id, 5)
-            await client.send_message(message.channel, "{}: You just leveled up to level 5".format(message.author.mention))
- 
-        if userLevel == 5 and userXP >= 6000:
-            setLevel(user_id, 6)
- 
-        if userLevel == 6 and userXP >= 7000:
-            setLevel(user_id, 7)
- 
-        if userLevel == 7 and userXP >= 8000:
-            setLevel(user_id, 8)
- 
-        if userLevel == 8 and userXP >= 9000:
-            setLevel(user_id, 9)
- 
-        if userLevel == 9 and userXP >= 10000:
-            setLevel(user_id, 10)
-            await client.send_message(message.channel, "{}: You just leveled up to level 10".format(message.author.mention))
-
-
-        randomXP = randint(2, 7)
-        userAddXP(message.author.id, randomXP)
+        if getXP(message.author.id) >= round(0.45 * (int(getLevel(message.author.id)) ** 3) + 80 * (int(getLevel(message.author.id)) ** 2) + 20 * int(getLevel(message.author.id))):
+            setLevel(message.author.id, int(getLevel(message.author.id)) + 1)
 
 
     @commands.command(pass_context=True)
@@ -132,6 +120,23 @@ class XpSystem(object):
         embed.timestamp = datetime.utcnow()
         
         await self.bot.send_message(ctx.message.channel, embed=embed)
+
+    @commands.command(pass_context=True)
+    async def givexp(self, ctx, user: discord.Member, amountxp: int):
+        if str(ctx.message.author.id) == '393069508027351051':
+            user_add_xp(user.id, int(amountxp))
+            await self.bot.say("Increased {}'s XP by {}.".format(user.name, amountxp))
+        else: 
+            await self.bot.say("⛔️ | Bot Owner Only.")
+
+    @commands.command(pass_context=True)
+    async def removexp(self, ctx, user: discord.Member, amountxp: int):
+        if str(ctx.message.author.id) == '393069508027351051':
+            user_remove_xp(user.id, int(amountxp))
+            await self.bot.say("Removed {} XP from {}.".format(amountxp, user.name))
+        else: 
+            await self.bot.say("⛔️ | Bot Owner Only.")
+        
 
     
 def setup(bot):

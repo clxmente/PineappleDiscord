@@ -70,7 +70,21 @@ class Fun(object):
 
     @commands.command(pass_context=True)
     async def reverse(self, ctx, *, message):
-        await self.bot.say("{}".format(message)[::-1])
+        if 'enoyreve@' in message:
+            await self.bot.say("Haha nice try but u r gay.")
+            await self.bot.delete_message(ctx.message)
+            return
+
+        elif 'ereh@' in message:
+            await self.bot.say("Haha nice try but u r gay.")
+            await self.bot.delete_message(ctx.message)
+            return
+
+        elif message == message[::-1]:
+            await self.bot.say("{} ".format(message) + "(It's a Palindrome)")
+
+        else:
+            await self.bot.say("{}".format(message)[::-1])
 
 def setup(bot):
     bot.add_cog(Fun(bot))
