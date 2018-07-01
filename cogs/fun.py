@@ -2,6 +2,8 @@ import discord
 import datetime
 import asyncio
 import json
+import praw
+import requests
 
 from discord.ext import commands
 from random import randint
@@ -9,6 +11,11 @@ from datetime import datetime
 
 with open('db/admin.json') as admn:
     admin = json.load(admn)
+
+
+reddit = praw.Reddit(client_id='',
+                    client_secret='',
+                    user_agent='')
 
 class Fun(object):
     def __init__(self, bot):
@@ -85,6 +92,30 @@ class Fun(object):
 
         else:
             await self.bot.say("{}".format(message)[::-1])
+
+    @commands.command(pass_context=True)
+    async def fortune(self, ctx):
+        cookie = requests.get("http://fortunecookieapi.herokuapp.com/v1/cookie").json()
+
+        embed = discord.Embed(title="Fortune Cookie")
+        embed.add_field(name="Fortune", value="{}".format(cookie[0]["fortune"]["message"]), inline=True)
+        embed.add_field(name="Lucky Numbers", value="{0},{1},{2},{3},{4},{5}".format(cookie[0]["lotto"]["numbers"][0],cookie[0]["lotto"]["numbers"][1],cookie[0]["lotto"]["numbers"][2],cookie[0]["lotto"]["numbers"][3],cookie[0]["lotto"]["numbers"][4],cookie[0]["lotto"]["numbers"][5]), inline=True)
+        embed.add_field(name="Lesson", value="**Chinese**:{0} ({1})\n**English**: {2}".format(cookie[0]["lesson"]["chinese"],cookie[0]["lesson"]["pronunciation"],cookie[0]["lesson"]["english"]),inline=False)
+        embed.set_thumbnail(url="https://images.emojiterra.com/twitter/512px/1f960.png")
+
+        await self.bot.say(embed=embed)
+
+    @commands.command(pass_context=True)
+    async def r(self, ctx, theSubreddit):
+        print("reddit command recieved")
+        print("----------------------")
+        reddit_submissions = reddit.subreddit('{}'.format(theSubreddit)).hot()
+        post_to_pick = random.randint(1, 10)
+        for x in range(0, post_to_pick):
+            submission = next(x for x in reddit_submissions if not x.stickied)
+
+        self.bot.say(submission.url)
+
 
 def setup(bot):
     bot.add_cog(Fun(bot))

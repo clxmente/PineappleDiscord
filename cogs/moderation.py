@@ -2,8 +2,13 @@ import discord
 import datetime
 import asyncio
 import json
+import os 
+import os.path
+
 
 from discord.ext import commands
+from os.path import isfile, join
+from os import listdir
 from random import randint
 from datetime import datetime
 
@@ -13,15 +18,194 @@ with open('db/admin.json') as admn:
 with open('db/privlogs.json') as admn:
     privlogs = json.load(admn)
 
+with open('db/users.json') as fp:
+    users = json.load(fp)
+
 
 def updateDatabase(db, name):
         with open("db/{}.json".format(name), 'w') as dbfile:
             json.dump(db, dbfile, indent=4)
 
+seconds_in_unit = {"s": 1, "m": 60, "h": 3600, "d": 86400, "w": 604800} # Gives us the seconds per unit used for timed mutes.
+def convertToSeconds(timeduration):
+    return int(timeduration[:-1]) * seconds_in_unit[timeduration[-1]]
+
+
+
+def addWarnPoints(user_id: int, warnpoints: int):
+    if os.path.isfile("db/users.json"):
+        try:
+            with open('db/users.json', 'r') as fp:
+                users = json.load(fp)
+            users[user_id]['warnpoints'] += warnpoints
+            with open('db/users.json', 'w') as fp:
+                json.dump(users, fp, sort_keys=True, indent=4)
+        except KeyError:
+            with open('db/users.json', 'r') as fp:
+                users = json.load(fp)
+            users[user_id] = {}
+            users[user_id]['warnpoints'] = warnpoints
+            with open('db/users.json', 'w') as fp:
+                json.dump(users, fp, sort_keys=True, indent=4)
+
+    else:
+        users = {user_id: {}}
+        users[user_id]['warnpoints'] = warnpoints
+        with open('db/users.json', 'w') as fp:
+            json.dump(users, fp, sort_keys=True, indent=4)
+
+
+def removeWarnPoints(user_id: int, warnpoints: int):
+    if os.path.isfile("db/users.json"):
+        try:
+            with open('db/users.json', 'r') as fp:
+                users = json.load(fp)
+            users[user_id]['warnpoints'] -= warnpoints
+            with open('db/users.json', 'w') as fp:
+                json.dump(users, fp, sort_keys=True, indent=4)
+        except KeyError:
+            with open('db/users.json', 'r') as fp:
+                users = json.load(fp)
+            users[user_id] = {}
+            users[user_id]['warnpoints'] = 0
+            with open('db/users.json', 'w') as fp:
+                json.dump(users, fp, sort_keys=True, indent=4)
+    else:
+        users = {user_id: {}}
+        users[user_id]['warnpoints'] = 0
+        with open('db/users.json', 'w') as fp:
+            json.dump(users, fp, sort_keys=True, indent=4)
+
+
+def getWarnPoints(user_id: int):
+    if os.path.isfile('db/users.json'):
+        try:
+            with open('db/users.json', 'r') as fp:
+                users = json.load(fp)
+            return users[user_id]['warnpoints']
+        except KeyError:
+            return 0
+
+
+
+
+
 class Moderation(object):
     def __init__(self, bot):
         self.bot = bot
 
+    """async def log_to_channel(self, server, type, embed_color, duration, timeduration, increase, warnpoints, user, moderator, reason): #Function to log to channels without using so much repeated code
+            if (server.id in admin["servers"]):
+                log_channel = server.get_channel(admin["servers"][server.id])
+                embed = discord.Embed(title="Member {}".format(type), colour = discord.Colour(embed_color))
+                embed.add_field(name="Member", value="{} (<@{}>)".format(user, user.id), inline=True)
+                embed.add_field(name="Mod", value=moderator, inline=True)
+                if duration == True:
+                    embed.add_field(name="Duration", value=timeduration, inline=True)
+                    embed.add_field(name="Reason", value=reason, inline=True)
+                elif duration == False:
+                    embed.add_field(name="Reason", value=reason, inline=False)
+                elif increase == True:
+                    embed.add_field(name="Increase", value=warnpoints, inline=True)
+                    embed.add_field(name="Reason", value=reason, inline=True)
+                elif increase == False:
+                    embed.add_field(name="Increase", value=warnpoints, inline=True)
+                    embed.add_field(name="Reason", value=reason, inline=True)
+                elif increase == None:
+                    embed.add_field(name="Reason", value=reason, inline=False)
+                else:
+                    embed.add_field(name="Reason", value=reason, inline=False)
+                embed.set_thumbnail(url=user.avatar_url)
+                embed.timestamp = datetime.utcnow()
+
+                await self.bot.send_message(log_channel, embed=embed)"""
+
+    @commands.command(pass_context=True)
+    @commands.has_permissions(ban_members=True)
+    async def warn(self, ctx, user: discord.Member, warnpoints: int, *, reason: str = "No reason specified"):
+        addWarnPoints(user.id, warnpoints)
+        if int(getWarnPoints(user.id)) >= 1000:
+            await self.bot.ban(user)
+        else:
+            pass
+        
+        server = ctx.message.server
+        if (server.id in admin["servers"]):
+            log_channel = server.get_channel(admin["servers"][server.id])
+        
+        userID = (user.id)
+        embed = discord.Embed(title="Member Warned", color = 0xB657D1)
+        embed.add_field(name="Member", value="{} ".format(user) + "(<@{}>)".format(userID), inline=False)
+        embed.add_field(name="Mod", value="{}".format(ctx.message.author), inline=True)
+        embed.add_field(name="Increase", value = warnpoints, inline=True)
+        embed.add_field(name="Reason", value="{}".format(reason), inline=False)
+        embed.set_thumbnail(url=user.avatar_url)
+        embed.timestamp = datetime.utcnow()
+
+        #await self.log_to_channel(ctx.message.server, "Warned", 0xb657d1, False, None, True, warnpoints, user, ctx.message.author, reason) 
+        #async def log_to_channel(self, server, type, embed_color, duration, timeduration, thepoints, warnpoints, user, moderator, reason):
+
+        await self.bot.send_message(log_channel, embed=embed)
+        await self.bot.delete_message(ctx.message)
+
+
+    @warn.error
+    async def warn_error(self, error, ctx):
+        if isinstance(error, discord.ext.commands.CheckFailure):
+            userID = (ctx.message.author.id)
+            await self.bot.send_message(ctx.message.author,"<@%s>: **You don't have permission to perform this action**" % (userID))
+            await self.bot.delete_message(ctx.message)
+        
+        elif isinstance(error, discord.ext.commands.MissingRequiredArgument):
+            userID = (ctx.message.author.id)
+            await self.bot.send_message(ctx.message.channel,"<@%s>: **Missing Argument**. Example of command is: ```!warn @user 100 this is a reason```" % (userID))
+            await self.bot.delete_message(ctx.message)
+
+    @commands.command(pass_context=True)
+    @commands.has_permissions(ban_members=True)
+    async def dewarn(self, ctx, user: discord.Member, warnpoints: int, *, reason: str = "No reason specified"):
+        removeWarnPoints(user.id, warnpoints)
+        
+        server = ctx.message.server
+        if (server.id in admin["servers"]):
+            log_channel = server.get_channel(admin["servers"][server.id])
+        
+        userID = (user.id)
+        embed = discord.Embed(title="Member Dewarned", color = 0xFDB509)
+        embed.add_field(name="Member", value="{} ".format(user) + "(<@{}>)".format(userID), inline=False)
+        embed.add_field(name="Mod", value="{}".format(ctx.message.author), inline=True)
+        embed.add_field(name="Decrease", value= warnpoints)
+        embed.add_field(name="Reason", value="{}".format(reason), inline=False)
+        embed.set_thumbnail(url=user.avatar_url)
+        embed.timestamp = datetime.utcnow()
+
+        await self.bot.send_message(log_channel, embed=embed)
+        await self.bot.delete_message(ctx.message)
+
+    @dewarn.error
+    async def dewarn_error(self, error, ctx):
+        if isinstance(error, discord.ext.commands.CheckFailure):
+            userID = (ctx.message.author.id)
+            await self.bot.send_message(ctx.message.author,"<@%s>: **You don't have permission to perform this action**" % (userID))
+            await self.bot.delete_message(ctx.message)
+        
+        elif isinstance(error, discord.ext.commands.MissingRequiredArgument):
+            userID = (ctx.message.author.id)
+            await self.bot.send_message(ctx.message.channel,"<@%s>: **Missing Argument**. Example of command is: ```!dewarn @user 100 this is a reason```" % (userID))
+            await self.bot.delete_message(ctx.message)
+
+    @commands.command(pass_context=True)
+    async def warnpoints(self, ctx, user: discord.Member = None):
+        if user == None:
+            user = ctx.message.author
+
+        points = getWarnPoints(user.id)
+        pointsleft = 1000 - int(points)
+
+        await self.bot.say("<@{}> has **{}** warn points. ".format(user.id, points) + "Points left: **{}.**".format(pointsleft))
+
+
+        
 
     @commands.command(pass_context=True)
     @commands.has_permissions(manage_roles=True)
@@ -46,7 +230,7 @@ class Moderation(object):
         
         elif isinstance(error, discord.ext.commands.MissingRequiredArgument):
             userID = (ctx.message.author.id)
-            await self.bot.send_message(ctx.message.channel,"<@%s>: **Make sure to give the role a name.```!cr [role name]```" % (userID))
+            await self.bot.send_message(ctx.message.channel,"<@%s>: **Make sure to give the role a name.**```!cr [role name]```" % (userID))
             await self.bot.delete_message(ctx.message)
 
     @commands.command(pass_context=True)
@@ -73,16 +257,14 @@ class Moderation(object):
 
     @commands.command(pass_context=True)
     @commands.has_permissions(administrator=True)
-    async def staffvote(self, ctx, *, person: str):
+    async def staffvote(self, ctx, *, message: str):
         emoji1 = discord.utils.get(self.bot.get_all_emojis(), name = "upvote")
         emoji2 = discord.utils.get(self.bot.get_all_emojis(), name = "downvote")
-        embed = discord.Embed(title='Staff vote for {}'.format(person), description='Vote whether we allow {} access to staff channels'.format(person), color=0xf6d025)
-        embed.add_field(name='Note:', value="Allowing anyone into staff is a risky move. Vote yes only if you trust the person. If you're not comfortable with them being here, then vote no.\nMessage will be deleted after the vote is finished.", inline=False)
+        embed = discord.Embed(title='Staff Vote', description="{}".format(message), color=0xf6d025)
         embed.add_field(name='Vote below', value="Reply with <:upvote:452583845305384981> to vote **Yes**\n \nReact with <:downvote:452583859532333067> to vote **No**")
-        embed.set_footer(text="Requested by {}".format(ctx.message.author))
         embed.timestamp = datetime.utcnow()
 
-        msg = await self.bot.say(embed=embed)
+        msg = await self.bot.say("@everyone", embed=embed)
         await self.bot.delete_message(ctx.message)
         await self.bot.add_reaction(msg, emoji1)
         await self.bot.add_reaction(msg, emoji2)
@@ -96,7 +278,7 @@ class Moderation(object):
         
         elif isinstance(error, discord.ext.commands.MissingRequiredArgument):
             userID = (ctx.message.author.id)
-            await self.bot.send_message(ctx.message.channel,"<@%s>: **Make to sure to specify who the vote is for. ```!staffvote Brandon```" % (userID))
+            await self.bot.send_message(ctx.message.channel,"<@%s>: **Make to sure to specify who the vote is for.** ```!staffvote [message]```" % (userID))
             await self.bot.delete_message(ctx.message)
 
     @commands.command(pass_context=True)
@@ -108,7 +290,6 @@ class Moderation(object):
             print(log_channel)
         
         #log_channel = discord.utils.get(ctx.message.server.channels, name = 'public-mod-logs')
-        # Specify  what role your adding. In this case its the muted role since we're muting/unmuting the user
         role = discord.utils.get(user.server.roles, name = "Timeout")
         # Send it to the logs
         userID = (user.id)
@@ -156,7 +337,6 @@ class Moderation(object):
         if (server.id in admin["servers"]):
             log_channel = server.get_channel(admin["servers"][server.id])
         #log_channel = discord.utils.get(ctx.message.server.channels, name = 'public-mod-logs')
-        # Specify  what role your adding. In this case its the muted role since we're muting/unmuting the user
         role = discord.utils.get(user.server.roles, name = "Timeout")
         # Send it to the logs
         userID = (user.id)
@@ -193,7 +373,7 @@ class Moderation(object):
     # Mute command
     @commands.command(pass_context=True)
     @commands.has_permissions(manage_roles=True)
-    async def mute(self, ctx, user: discord.Member, *, reason: str = "No reason specified"):
+    async def mute(self, ctx, user: discord.Member, timeduration, *, reason: str = "No reason specified"):
         server = ctx.message.server
         if (server.id in admin["servers"]):
             log_channel = server.get_channel(admin["servers"][server.id])        
@@ -205,7 +385,7 @@ class Moderation(object):
         embed = discord.Embed(title="Member Muted", color = 0xB760F3)
         embed.add_field(name="Member", value="{} ".format(user) + "(<@{}>)".format(userID), inline=True)
         embed.add_field(name="Mod", value="{}".format(ctx.message.author), inline=True)
-    #   embed.add_field(name="Duration", value="{} seconds".format(time), inline=True)
+        embed.add_field(name="Duration", value=timeduration, inline=True)
         embed.add_field(name="Reason", value="{}".format(reason), inline=True)
 
 
@@ -218,12 +398,14 @@ class Moderation(object):
         print("muted")
         await self.bot.delete_message(ctx.message)
 
-    """ await asyncio.sleep(time)
+        theTime = convertToSeconds("{}".format(timeduration)) #convert our time argument to seconds
+        print(theTime)
+        await asyncio.sleep(int(theTime)) # pass the seconds to asyncio.sleep
         try:
-            await bot.remove_roles(user, role)
+            await self.bot.remove_roles(user, role)
             print("unmuted")
         except:
-            pass"""
+            pass
 
     @mute.error
     async def mute_error(self, error, ctx):
@@ -236,8 +418,11 @@ class Moderation(object):
                 await self.bot.delete_message(botMessage)
             except:
                 pass
-
         
+        elif isinstance(error, discord.ext.commands.MissingRequiredArgument):
+            userID = (ctx.message.author.id)
+            await self.bot.send_message(ctx.message.author,"<@%s>: **Missing Required Argument.** Ex:```!mute @user 2h this is a reason```" % (userID))
+            await self.bot.delete_message(ctx.message)
         elif isinstance(error, discord.ext.commands.CheckFailure):
             userID = (ctx.message.author.id)
             await self.bot.send_message(ctx.message.author,"<@%s>: **You don't have permission to perform this action**" % (userID))
@@ -369,10 +554,13 @@ class Moderation(object):
         embed.set_thumbnail(url=user.avatar_url)
         embed.timestamp = datetime.utcnow()
 
-    #   await bot.send_message(discord.Object(id=log_channel), embed=embed)
+        #await bot.send_message(discord.Object(id=log_channel), embed=embed)
+        
+        
         await self.bot.send_message(log_channel, embed=embed)
         await self.bot.kick(user)
         await self.bot.delete_message(ctx.message)
+        #(self, server, embed_color, user, moderator, reason)
 
     @kick.error
     async def kick_error(self, error, ctx):

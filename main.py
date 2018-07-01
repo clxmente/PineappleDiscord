@@ -61,7 +61,63 @@ async def status(ctx, *, message): #Changing the playing status of bot with a co
             await bot.change_presence(game=discord.Game(name='{}'.format(message)))
     else:
         userID = ctx.message.author.id
-        await bot.say("<@%s>: Sorry, you aren't my owner." % (userID))
+        await bot.say("<@%s>: ⛔️ | Bot owner only!" % (userID))
+
+
+@bot.command(pass_context=True)
+async def help(ctx):
+    embed = discord.Embed(title='PineappleBot Help.', description="**Invite Link:** https://discordapp.com/api/oauth2/authorize?client_id=456247418288209922&permissions=8&scope=bot", color = 0xf6d025)
+    embed.add_field(name="Fun Module", value = "`!fortune`,`!channelid`,`!duck`,`!shiba`,`!dog`,`!dab`,`azcount`,`hmmcount`.`!hexcode`,`!reverse`,`!spam`,`!say`.", inline=False)
+    embed.add_field(name="XP Module", value = "`!xpstats`", inline=False)
+    embed.add_field(name="Moderation Module", value="`!kick`,`!ban`,`!mute`,`!unmute`,`!clear`,`!info`,`!serverinfo`,`!privatelogging`,`!enablelogging`,`!staffvote`,`!er`,`!cr`", inline=False)
+    embed.add_field(name="Specific help", value="You can get more specific help on each command by doing `![module]help` for example, `!funhelp` will give you a complete description of each command in that module.")
+    
+    await bot.send_message(ctx.message.channel, embed=embed)
+
+@bot.command(pass_context=True)
+async def funhelp(ctx):
+    embed = discord.Embed(title="Fun Module Help.", color = 0xf6d025)
+    embed.add_field(name="hmmcount", value = "**Description:** Shows a count of how many times users have said hmm.\n**Permission Required** None\n**Arguments:** `None`\n```hmmcount```", inline=False)
+    embed.add_field(name="azcount", value = "**Description:** Shows a count of how many times users have sent a holoalphabetic message or pangram. In other words a message with every letter of the alphabet.\n**Permission Required** None\n**Arguments:** `None`\n```azcount```", inline=False)
+    embed.add_field(name="duck", value = "**Description:** Loads a random picture of a duck\n**Permission Required** None\n**Arguments:** `None`\n```!duck```", inline=False)
+    embed.add_field(name="dog", value = "**Description:** Loads a random picture of a dog\n**Permission Required** None\n**Arguments:** `None`\n```!dog```", inline=False)
+    embed.add_field(name="shib", value = "**Description:** Loads a random picture of a shiba\n**Permission Required** None\n**Arguments:** `None`\n```!shib```", inline=False)
+    embed.add_field(name="dab", value = "**Description:** Dab\n**Permission Required** None\n**Arguments:** `None`\n```!dab```", inline=False)
+    embed.add_field(name="channelid", value = "**Description:** Sends the channel id of the current channel.\n**Permission Required:** None\n**Arguments:** `None`\n```!channelid```", inline=False)
+    embed.add_field(name="hexcode", value = "**Description:** Generates a random hex color code.\n**Permission Required:** None\n**Arguments:** `None`\n```!hexcode```", inline=False)
+    embed.add_field(name="reverse", value = "**Description:** Reverses a message so that it's backwords.\n**Permission Required:** None\n**Arguments:** `Message`\n```!reverse [message]```", inline=False)
+    embed.add_field(name="say", value = "**Description:** Makes the bot repeat a message.\n**Permission Required:** None\n**Arguments:** `Message`\n```!say [message]```", inline=False)
+    embed.add_field(name="spam", value = "**Description:** Spams a user with a message. Permission is in place so that it's not overused.\n**Permission Required:** Ban Members\n**Arguments:** `User`,`Integer`,`Message`\n```!spam [@user] [int] [message]```", inline=False)
+    embed.add_field(name="fortune", value = "**Description:** Gives you a fortune cookie.\n**Permission Required:** None\n**Arguments:**`None`\n```!fortune```", inline=False)
+    
+    await bot.say(embed=embed)
+
+@bot.command(pass_context=True)
+async def moderationhelp(ctx):
+    embed = discord.Embed(title="Moderation Module Help.", color = 0xf6d025)
+    embed.add_field(name="privatelogging", value = "**Description:** Sets the channel for private logging for message edits, command uses, and deleted messages.\n**Permission Required:** Administrator\n**Arguments:** `None`\n```!privatelogging```", inline=False)
+    embed.add_field(name="enablelogging", value = "**Description:** Sets the channel for mod logging.\n**Permission Required:** Administrator\n**Arguments:** `None`\n```!enablelogging```", inline=False)
+    embed.add_field(name="staffvote", value = "**Description:** Sends an embed to vote for staff position through reacting with an upvote or downvote.\n**Permission Required:** Administrator\n**Arguments:** `member`\n```!staffvote Eric```", inline=False)
+    embed.add_field(name="mute", value = "**Description:** Mute a user.Time argument format is `<number>[s|m|h|d|w]`. An example of this is `45m` which mutes the user for 45 minutes.\n**Permission Required:** Manage Roles\n**Arguments:** `user` `time` `reason`\n```!mute @user 10h this is a reason```", inline=False)
+    embed.add_field(name="unmute", value = "**Description:** Unmute a user.\n**Permission Required:** Manage Roles\n**Arguments:** `user` `reason`\n```!unmute @user this is a reason```", inline=False)
+    embed.add_field(name="info", value = "**Description:** Gives you info on a user.\n**Permission Required:** @Moderators\n**Arguments:** `user`\n```!info @user```", inline=False)
+    embed.add_field(name="serverinfo", value = "**Description:** Gives you info on the current server.\n**Permission Required:** Administrator\n**Arguments:** `None`\n```!serverinfo```", inline=False)
+    embed.add_field(name="kick", value = "**Description:** Kicks a user from the server.\n**Permission Required:** Kick Members\n**Arguments:** `user`\n```!kick @user```", inline=False)
+    embed.add_field(name="ban", value = "**Description:** Bans a user.\n**Permission Required:** Ban Members\n**Arguments:** `user`\n```!ban @user```", inline=False)
+    embed.add_field(name="clear", value = "**Description:** Clears messages from a channel. Can only delete messages in the range of [2, 100]\n**Permission Required:** Administrator\n**Arguments:** `integer`\n```!clear 50```", inline=False)
+    embed.add_field(name="Create Role", value = "**Description:** Creates a new role and assigns a random color to it.\n**Permission Required:** Manage Roles\n**Arguments:** `Role Name`\n```!cr [role name]```", inline=False)
+    embed.add_field(name="Edit Role", value = "**Description:** Takes an existing role and assigns a random color to it.\n**Permission Required:** Manage Roles\n**Arguments:** `Role Name`\n```!er [role name]```", inline=False)
+
+    await bot.say(embed=embed)
+
+@bot.command(pass_context=True)
+async def xphelp(ctx):
+    embed = discord.Embed(title="XP Module Help.", color = 0xf6d025)
+    embed.add_field(name="xpstats", value = "**Description:** Displays your (or another users) current level and xp.\n**Permission Required:** None\n**Arguments:** `None` or `User`\n```!xpstats```", inline=False)
+    embed.add_field(name="Coming Soon", value = "At the moment, the bot is still undergoing development in regards to the xp module. There is plans to make an `xptop` command which displays a leaderboard of the top ranked users. More fun ideas are also in the works, stay tuned for updates.")
+
+    await bot.say(embed=embed)
+    
 
 
 @bot.command(pass_context=True)
@@ -205,7 +261,7 @@ async def LoadCogs():
 
 
 @bot.command(pass_context=True)
-async def help(ctx):
+async def commandhelp(ctx):
     embed = discord.Embed(title='Help Command', description="**Invite Link:** https://discordapp.com/api/oauth2/authorize?client_id=456247418288209922&permissions=8&scope=bot", color = 0xf6d025)
     
     embed.add_field(name="privatelogging", value = "**Description:** Sets the channel for private logging for message edits, command uses, and deleted messages.\n**Permission Required:** Administrator\n**Arguments:** `None`\n```!privatelogging```", inline=False)
@@ -486,4 +542,4 @@ async def on_message(message):
             await bot.send_message(message.author, "<@%s>: **What you just said has caught our word filters and has been removed**." % (userID))
 
 # Insert your token here
-bot.run(" ")
+bot.run("")
